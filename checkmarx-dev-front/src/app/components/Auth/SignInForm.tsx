@@ -5,24 +5,27 @@ import { useState } from "react";
 import { EyeIcon, EyeOff, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useUser } from "app/context/User";
-import { handleSignIn } from "app/auth/signIn";
+import { signUser } from "app/auth/singIn";
 
 export default function SignInForm() {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
     const { userRef } = useUser();
     const router = useRouter();
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        setErrorMessage("");
         const formData = new FormData(event.currentTarget);
         const data = Object.fromEntries(formData.entries());
 
         try {
-            const response = await handleSignIn(data);
+            const response = await signUser(data);
             if (response?.email) {
                 userRef.current = { id: +response.user_id, email: response.email };
                 router.push("/posts");
             }
+            setErrorMessage(response?.message);
         } catch (e) {
             console.error(e);
         }
@@ -113,12 +116,13 @@ export default function SignInForm() {
                             <motion.p
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="mt-2 hidden text-sm text-red-500 peer-[&:not(:placeholder-shown):not(:focus):invalid]:block"
+                                className="my-2 hidden text-sm text-red-500 peer-[&:not(:placeholder-shown):not(:focus):invalid]:block"
                             >
                                 Password must be 8 characters
                             </motion.p>
+                            {errorMessage && <motion.p className=" text-sm text-red-500">{errorMessage}</motion.p>}
                         </motion.div>
-                        <div>
+                        <div className="mt-2.5">
                             <motion.div
                                 initial={{ opacity: 0, y: -50 }}
                                 animate={{ opacity: 1, x: 0 }}
@@ -126,7 +130,7 @@ export default function SignInForm() {
                                 className="flex items-center justify-center w-full"
                             >
                                 <button
-                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline group-invalid:pointer-events-none group-invalid:opacity-30 w-full"
+                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 my-2.5 rounded focus:outline-none focus:shadow-outline group-invalid:pointer-events-none group-invalid:opacity-30 w-full"
                                     type="submit"
                                 >
                                     Sign In

@@ -1,6 +1,6 @@
 "use server";
 import { API_URI } from "@conf/config";
-import { validateToken } from "app/auth/signIn";
+import { validateToken } from "app/auth/singIn";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 

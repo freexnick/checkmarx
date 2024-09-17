@@ -4,7 +4,7 @@ import PostCard from "@comp/Post/PostCard";
 import Spinner from "@ui/Spinner";
 import CommentSection from "@comp/Comment/CommentSection";
 import { fetchPost } from "app/data/posts";
-import { fetchUser } from "app/auth/signIn";
+import { fetchUser } from "app/auth/singIn";
 import { redirect } from "next/navigation";
 import { Post, Comment, User } from "@t/index";
 

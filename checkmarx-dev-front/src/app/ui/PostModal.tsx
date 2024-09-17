@@ -28,7 +28,7 @@ export default function PostModal({ isOpen, onClose, variant, onSubmission, post
 
             if (res) {
                 onClose();
-                router.push("/posts");
+                router.refresh();
             }
         } catch (e) {
             console.error(e);

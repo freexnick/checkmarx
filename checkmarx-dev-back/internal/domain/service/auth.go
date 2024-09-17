@@ -1,8 +1,6 @@
 package service
 
 import (
-	"checkmarx/internal/domain/entity"
-	"checkmarx/internal/domain/repository"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base32"
@@ -11,6 +9,9 @@ import (
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"checkmarx/internal/domain/entity"
+	"checkmarx/internal/domain/repository"
 )
 
 type AuthService struct {
@@ -88,11 +89,19 @@ func (as *AuthService) Create(u *entity.User) (*entity.Token, error) {
 
 	u.Email = strings.ToLower(u.Email)
 
+	user, err := as.Get(u)
+	if err != nil && err.Error() != "record not found" {
+		return nil, err
+	}
+
+	if user != nil {
+		return nil, errors.New("user already exist")
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
 	}
-
 	u.Password = string(hash)
 
 	token, err := as.GenerateToken(u)
@@ -100,7 +109,9 @@ func (as *AuthService) Create(u *entity.User) (*entity.Token, error) {
 		return nil, err
 	}
 
-	as.repo.Insert(u, token)
+	if err := as.repo.Insert(u, token); err != nil {
+		return nil, err
+	}
 
 	return token, nil
 }

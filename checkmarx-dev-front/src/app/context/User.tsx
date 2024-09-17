@@ -1,5 +1,5 @@
 "use client";
-import { fetchUser } from "app/auth/signIn";
+import { fetchUser } from "app/auth/singIn";
 import { useRouter } from "next/navigation";
 import { MutableRefObject, useRef, createContext, useContext, useLayoutEffect } from "react";
 import { User } from "@t/index";

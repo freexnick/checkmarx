@@ -32,7 +32,11 @@ func (ah *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	token, err := ah.Service.Create(&user)
 	if err != nil {
-		helpers.WriteJSON(w, http.StatusInternalServerError, err.Error(), nil)
+		if err.Error() == "user already exist" {
+			helpers.WriteJSON(w, http.StatusBadRequest, err.Error(), nil)
+			return
+		}
+		helpers.WriteJSON(w, http.StatusInternalServerError, "problem creating user", nil)
 		return
 	}
 
@@ -122,5 +126,3 @@ func (ah *AuthHandler) Authenticate(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
-
-//.With(conf.AuthHandler.Authenticate)

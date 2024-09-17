@@ -37,6 +37,7 @@ export default function CommentForm({ postID, commentState, stopEditing }: Comme
 
             if (res) {
                 stopEditing();
+                setContent("");
                 router.refresh();
             }
         } catch (e) {

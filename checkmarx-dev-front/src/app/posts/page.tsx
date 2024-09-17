@@ -1,13 +1,20 @@
 import Header from "@ui/Header";
 import PostList from "@comp/Post/PostList";
-import { fetchUser } from "app/auth/signIn";
+import { fetchUser } from "app/auth/singIn";
 import { fetchPosts } from "app/data/posts";
 import { redirect } from "next/navigation";
 import { Post, User } from "@t/index";
 
 export default async function Posts() {
-    const user: User = await fetchUser();
-    const posts: Post[] = await fetchPosts();
+    let user: User | null = null,
+        posts: Post[] | null = null;
+
+    try {
+        user = await fetchUser();
+        posts = await fetchPosts();
+    } catch (e) {
+        console.error(e);
+    }
 
     if (!user?.id) {
         redirect("/");
@@ -15,8 +22,8 @@ export default async function Posts() {
 
     return (
         <>
-            <Header user={user} />
-            <PostList posts={posts} user={user} />;
+            {user && <Header user={user} />}
+            {user && posts && <PostList posts={posts} user={user} />};
         </>
     );
 }
