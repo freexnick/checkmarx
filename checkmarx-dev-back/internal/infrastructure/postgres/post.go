@@ -27,6 +27,7 @@ func (pr *PostRepository) Insert(p *entity.Post) error {
 
 	_, err := pr.db.client.ExecContext(ctx, query, args...)
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		return err
 	}
 
@@ -57,8 +58,8 @@ func (pr *PostRepository) Get(id int) (*entity.Post, []*entity.Comment, error) {
 		&post.CreatedAt,
 		&post.UpdatedAt,
 	)
-
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		if err == sql.ErrNoRows {
 			return nil, nil, ErrRecordNotFound
 		}
@@ -78,6 +79,7 @@ func (pr *PostRepository) Get(id int) (*entity.Post, []*entity.Comment, error) {
 
 	rows, err := pr.db.client.QueryContext(ctx, commentsQuery, id)
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		return nil, nil, fmt.Errorf("failed to fetch comments: %w", err)
 	}
 	defer rows.Close()
@@ -93,6 +95,7 @@ func (pr *PostRepository) Get(id int) (*entity.Post, []*entity.Comment, error) {
 			&comment.UpdatedAt,
 		)
 		if err != nil {
+			pr.db.observ.Error(ctx, err)
 			return nil, nil, fmt.Errorf("failed to scan comment: %w", err)
 		}
 		comments = append(comments, &comment)
@@ -114,15 +117,18 @@ func (pr *PostRepository) Update(p *entity.Post) error {
 
 	result, err := pr.db.client.ExecContext(ctx, query, args...)
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		return err
 	}
 
 	if rowsAffected == 0 {
+		pr.db.observ.Error(ctx, err)
 		return errors.New("couldn't find the post")
 	}
 
@@ -137,15 +143,18 @@ func (pr *PostRepository) Delete(id int) error {
 
 	result, err := pr.db.client.ExecContext(ctx, query, id)
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		return err
 	}
 
 	if rowsAffected == 0 {
+		pr.db.observ.Error(ctx, err)
 		return errors.New("couldn't find the post")
 	}
 
@@ -161,6 +170,7 @@ func (pr *PostRepository) GetAll() ([]*entity.Post, error) {
 
 	rows, err := pr.db.client.QueryContext(ctx, query)
 	if err != nil {
+		pr.db.observ.Error(ctx, err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -169,6 +179,7 @@ func (pr *PostRepository) GetAll() ([]*entity.Post, error) {
 		post := new(entity.Post)
 		err := rows.Scan(&post.ID, &post.Title, &post.Content, &post.AuthorID, &post.CreatedAt)
 		if err != nil {
+			pr.db.observ.Error(ctx, err)
 			return nil, err
 		}
 		posts = append(posts, post)

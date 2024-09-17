@@ -3,20 +3,16 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
+
+	"checkmarx/internal/observer"
 )
 
-type Configuration struct {
-	Port         string
-	Handler      http.Handler
-	ReadTimeout  uint
-	WriteTimeout uint
-	IdleTimeout  uint
-}
-
 type Server struct {
-	httpS *http.Server
+	observ *observer.Observer
+	httpS  *http.Server
 }
 
 func New(conf Configuration) (*Server, error) {
@@ -25,6 +21,7 @@ func New(conf Configuration) (*Server, error) {
 	}
 
 	return &Server{
+		observ: conf.Observer,
 		httpS: &http.Server{
 			Addr:         conf.Port,
 			Handler:      conf.Handler,
@@ -36,11 +33,13 @@ func New(conf Configuration) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
+	s.observ.Info(ctx, fmt.Sprintf("HTTP server is listening on %s", s.httpS.Addr))
+
 	return s.httpS.ListenAndServe()
 }
 
 func (s *Server) Close(ctx context.Context) error {
-	err := s.httpS.Close()
+	err := s.httpS.Shutdown(ctx)
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

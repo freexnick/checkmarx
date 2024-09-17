@@ -10,6 +10,9 @@ const configPath = "./configs/.env"
 type Configuration struct {
 	ApiVersion uint `env:"HTTP_API_VERSION"`
 
+	LogFormat string `env:"LOG_FORMAT"`
+	LogLevel  string `env:"LOG_LEVEL"`
+
 	HTTPServerAddress   string `env:"HTTP_SERVER_ADDRESS"`
 	ReadTimeoutSeconds  uint   `env:"HTTP_SERVER_READ_TIME_OUT"`
 	WriteTimeoutSeconds uint   `env:"HTTP_SERVER_WRITE_TIME_OUT"`

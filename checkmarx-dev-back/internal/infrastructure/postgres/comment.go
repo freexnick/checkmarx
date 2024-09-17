@@ -25,6 +25,7 @@ func (cr *CommentRepository) Insert(c *entity.Comment) error {
 
 	_, err := cr.db.client.ExecContext(ctx, query, args...)
 	if err != nil {
+		cr.db.observ.Error(ctx, err)
 		return err
 	}
 
@@ -40,14 +41,18 @@ func (cr *CommentRepository) Update(c *entity.Comment) error {
 
 	result, err := cr.db.client.ExecContext(ctx, query, args...)
 	if err != nil {
+		cr.db.observ.Error(ctx, err)
 		return err
 	}
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		cr.db.observ.Error(ctx, err)
 		return err
 	}
 
 	if rowsAffected == 0 {
+		cr.db.observ.Error(ctx, err)
 		return errors.New("couldn't find the comment")
 	}
 
@@ -62,15 +67,18 @@ func (cr *CommentRepository) Delete(id int) error {
 
 	result, err := cr.db.client.ExecContext(ctx, query, id)
 	if err != nil {
+		cr.db.observ.Error(ctx, err)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		cr.db.observ.Error(ctx, err)
 		return err
 	}
 
 	if rowsAffected == 0 {
+		cr.db.observ.Error(ctx, err)
 		return errors.New("couldn't find the post")
 	}
 

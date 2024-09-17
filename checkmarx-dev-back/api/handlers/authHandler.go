@@ -104,7 +104,7 @@ func (ah *AuthHandler) Get(w http.ResponseWriter, r *http.Request) {
 	helpers.WriteJSON(w, http.StatusOK, user, nil)
 }
 
-func (ah *AuthHandler) Authenticate(next http.Handler) http.Handler {
+func (ah *AuthHandler) Authorized(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Cookie")
 		cookie, err := r.Cookie("session")

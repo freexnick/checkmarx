@@ -7,6 +7,8 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+
+	"checkmarx/internal/observer"
 )
 
 var (
@@ -15,15 +17,9 @@ var (
 	ErrDuplicateEmail = errors.New("duplicate email")
 )
 
-type Configuration struct {
-	ConnectionURL    string
-	MinConnections   int
-	MaxConnections   int
-	MaxIdleConnetion int
-}
-
 type Client struct {
 	client *sql.DB
+	observ *observer.Observer
 }
 
 func New(ctx context.Context, conf Configuration) (*Client, error) {
@@ -40,7 +36,7 @@ func New(ctx context.Context, conf Configuration) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{client: db}, nil
+	return &Client{client: db, observ: conf.Observer}, nil
 }
 
 func (c *Client) Close() error {

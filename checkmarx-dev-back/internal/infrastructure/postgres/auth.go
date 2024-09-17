@@ -24,9 +24,8 @@ func (ar *AuthRepository) Get(email string) (*entity.User, error) {
 	user := new(entity.User)
 
 	query := `SELECT id, email, password, created_at, updated_at FROM users WHERE email = $1`
-
-	err := ar.db.client.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt)
-	if err != nil {
+	if err := ar.db.client.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt, &user.UpdatedAt); err != nil {
+		ar.db.observ.Error(ctx, err)
 		if err == sql.ErrNoRows {
 			return nil, ErrRecordNotFound
 		}
@@ -56,8 +55,8 @@ func (ar *AuthRepository) Insert(u *entity.User, t *entity.Token) error {
 		`
 
 	_, err := ar.db.client.ExecContext(ctx, query, args...)
-
 	if err != nil {
+		ar.db.observ.Error(ctx, err)
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
 			return ErrDuplicateEmail
@@ -88,6 +87,7 @@ func (ar *AuthRepository) InsertToken(t *entity.Token) error {
 
 	_, err := ar.db.client.ExecContext(ctx, query, args...)
 	if err != nil {
+		ar.db.observ.Error(ctx, err)
 		return err
 	}
 
@@ -118,6 +118,7 @@ func (ar *AuthRepository) GetByToken(t [32]byte) (*entity.User, error) {
 		&user.UpdatedAt,
 	)
 	if err != nil {
+		ar.db.observ.Error(ctx, err)
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}

@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -9,14 +10,19 @@ import (
 
 	"checkmarx/api"
 	"checkmarx/api/handlers"
+	"checkmarx/api/middleware"
 	"checkmarx/internal/config"
 	"checkmarx/internal/domain/service"
 	httpS "checkmarx/internal/infrastructure/http"
 	"checkmarx/internal/infrastructure/postgres"
+	"checkmarx/internal/observer"
+	"checkmarx/internal/observer/logger"
 )
 
 type Application struct {
+	log            *logger.Logger
 	postgresClient *postgres.Client
+	observe        *observer.Observer
 
 	userRepository    *postgres.UserRepository
 	authRepository    *postgres.AuthRepository
@@ -28,10 +34,11 @@ type Application struct {
 	postService    *service.PostService
 	commentService *service.CommentService
 
-	userHandler    *handlers.UserHandler
-	authHandler    *handlers.AuthHandler
-	postHandler    *handlers.PostHandler
-	commentHandler *handlers.CommentHandler
+	middlewareHandler *middleware.MiddlewareHandler
+	userHandler       *handlers.UserHandler
+	authHandler       *handlers.AuthHandler
+	postHandler       *handlers.PostHandler
+	commentHandler    *handlers.CommentHandler
 
 	handler    http.Handler
 	httpServer *httpS.Server
@@ -45,12 +52,16 @@ func New(ctx context.Context) (*Application, error) {
 
 	app := &Application{}
 
+	if err := app.setObserver(ctx, conf); err != nil {
+		return nil, fmt.Errorf("set observers: %w", err)
+	}
+
 	if err := app.setRepositories(ctx, conf); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("set repositories: %w", err)
 	}
 
 	if err := app.setServices(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("set service: %w", err)
 	}
 
 	if err := app.setRouteHandlers(); err != nil {
@@ -62,10 +73,25 @@ func New(ctx context.Context) (*Application, error) {
 	}
 
 	if err := app.setServers(conf); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("set servers: %w", err)
 	}
 
 	return app, nil
+}
+
+func (a *Application) setObserver(ctx context.Context, conf *config.Configuration) error {
+	l := logger.New(logger.Configuration{
+		LogFormat:      logger.ParseLogFormat(conf.LogFormat),
+		LogLevel:       logger.ParseLogLevel(conf.LogLevel),
+		SkipFrameCount: 1,
+	})
+
+	a.log = l
+
+	a.observe = observer.New(ctx, observer.Configuration{
+		Logger: l})
+
+	return nil
 }
 
 func (a *Application) setRepositories(ctx context.Context, conf *config.Configuration) error {
@@ -99,6 +125,9 @@ func (a *Application) setServices() error {
 }
 
 func (a *Application) setRouteHandlers() error {
+	a.middlewareHandler = middleware.New(middleware.Configuration{
+		Observer: a.observe,
+	})
 	a.userHandler = handlers.NewUserHandler(a.userService)
 	a.authHandler = handlers.NewAuthHandler(a.authService)
 	a.postHandler = handlers.NewPostHandler(a.postService)
@@ -111,12 +140,13 @@ func (a *Application) setRoutes(conf *config.Configuration) error {
 	r := chi.NewRouter()
 
 	routeConfig := api.Configuration{
-		Router:         r,
-		UserHandler:    a.userHandler,
-		AuthHandler:    a.authHandler,
-		PostHandler:    a.postHandler,
-		CommentHandler: a.commentHandler,
-		ApiVersion:     conf.ApiVersion,
+		Router:            r,
+		MiddlewareHandler: a.middlewareHandler,
+		UserHandler:       a.userHandler,
+		AuthHandler:       a.authHandler,
+		PostHandler:       a.postHandler,
+		CommentHandler:    a.commentHandler,
+		ApiVersion:        conf.ApiVersion,
 	}
 
 	a.handler = api.New(routeConfig)
@@ -131,6 +161,7 @@ func (a *Application) setServers(conf *config.Configuration) error {
 		ReadTimeout:  conf.ReadTimeoutSeconds,
 		WriteTimeout: conf.WriteTimeoutSeconds,
 		IdleTimeout:  conf.IdleTimeoutSeconds,
+		Observer:     a.observe,
 	})
 	if err != nil {
 		return err
@@ -160,12 +191,14 @@ func (a *Application) Start(ctx context.Context) error {
 func (a *Application) Close(ctx context.Context) error {
 	if a.postgresClient != nil {
 		if err := a.postgresClient.Close(); err != nil {
+			a.observe.Error(ctx, fmt.Errorf("closing postgres client: %w", err))
 			return err
 		}
 	}
 
 	if a.httpServer != nil {
 		if err := a.httpServer.Close(ctx); err != nil {
+			a.observe.Error(ctx, fmt.Errorf("closing http server: %w", err))
 			return err
 		}
 	}
