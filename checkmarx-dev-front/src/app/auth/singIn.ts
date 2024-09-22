@@ -22,7 +22,7 @@ async function signUser(data: formEntries) {
             return { status: res.status, message: user };
         }
 
-        if (user?.session) {
+        if (user?.session?.token) {
             cookies().set("session", user.session.token, {
                 expires: new Date(user.session.expires_at),
                 path: "/",

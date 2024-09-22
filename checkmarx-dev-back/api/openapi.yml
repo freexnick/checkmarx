@@ -1,0 +1,351 @@
+openapi: 3.0.0
+info:
+    title: checkmarx
+    version: 1.0.0
+    description: Posts.
+
+tags:
+    - name: Auth
+      description: Operations related to user authentication
+    - name: Posts
+      description: Operations related to blog posts
+    - name: Comments
+      description: Operations related to comments on posts
+
+paths:
+    /api/v1/auth:
+        get:
+            summary: Check authentication status
+            tags:
+                - Auth
+            security:
+                - sessionAuth: []
+            responses:
+                "200":
+                    description: User is authenticated
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/User"
+                "401":
+                    description: User not authenticated
+
+    /api/v1/auth/signin:
+        post:
+            summary: Sign in
+            tags:
+                - Auth
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/User"
+            responses:
+                "200":
+                    description: User signed in successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Credentials"
+                "400":
+                    description: Bad request (invalid credentials)
+
+    /api/v1/auth/signup:
+        post:
+            summary: Sign up
+            tags:
+                - Auth
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/User"
+            responses:
+                "201":
+                    description: User created successfully
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Token"
+                "400":
+                    description: User already exists or malformed JSON
+                "500":
+                    description: Internal server error (problem creating user)
+
+    /api/v1/posts:
+        get:
+            summary: Get all posts
+            tags:
+                - Posts
+            security:
+                - sessionAuth: []
+            responses:
+                "200":
+                    description: A list of posts
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: "#/components/schemas/Post"
+                "500":
+                    description: Couldn't fetch posts
+
+        post:
+            summary: Create a new post
+            tags:
+                - Posts
+            security:
+                - sessionAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/PostCreate"
+            responses:
+                "201":
+                    description: Post created successfully
+                "400":
+                    description: Malformed JSON
+                "500":
+                    description: Couldn't create post
+
+    /api/v1/posts/{id}:
+        get:
+            summary: Get a post by ID
+            tags:
+                - Posts
+            security:
+                - sessionAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                "200":
+                    description: A post object
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Post"
+                "404":
+                    description: Couldn't find the post
+                "400":
+                    description: Invalid Post ID
+
+        put:
+            summary: Update a post by ID
+            tags:
+                - Posts
+            security:
+                - sessionAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/PostUpdate"
+            responses:
+                "200":
+                    description: Post updated successfully
+                "400":
+                    description: Malformed JSON or Invalid Post ID
+                "500":
+                    description: Couldn't update post
+
+        delete:
+            summary: Delete a post by ID
+            tags:
+                - Posts
+            security:
+                - sessionAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                "204":
+                    description: Post deleted successfully
+                "404":
+                    description: Couldn't find the post
+                "400":
+                    description: Invalid Post ID
+                "500":
+                    description: Couldn't delete the post
+
+    /api/v1/comments:
+        post:
+            summary: Create a new comment
+            tags:
+                - Comments
+            security:
+                - sessionAuth: []
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CommentCreate"
+            responses:
+                "201":
+                    description: Comment created successfully
+                "400":
+                    description: Malformed JSON or content can't be empty
+                "500":
+                    description: Couldn't create comment
+
+        put:
+            summary: Update a comment by ID
+            tags:
+                - Comments
+            security:
+                - sessionAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/CommentUpdate"
+            responses:
+                "200":
+                    description: Comment updated successfully
+                "400":
+                    description: Malformed JSON
+                "404":
+                    description: Comment not found
+
+        delete:
+            summary: Delete a comment by ID
+            tags:
+                - Comments
+            security:
+                - sessionAuth: []
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                "204":
+                    description: Comment deleted successfully
+                "404":
+                    description: Comment not found
+                "400":
+                    description: Invalid comment ID
+                "500":
+                    description: Couldn't delete comment
+
+components:
+    schemas:
+        Post:
+            type: object
+            properties:
+                id:
+                    type: integer
+                title:
+                    type: string
+                content:
+                    type: string
+                author_id:
+                    type: integer
+
+        PostCreate:
+            type: object
+            properties:
+                title:
+                    type: string
+                content:
+                    type: string
+                author_id:
+                    type: integer
+
+        PostUpdate:
+            type: object
+            properties:
+                title:
+                    type: string
+                content:
+                    type: string
+
+        Comment:
+            type: object
+            properties:
+                id:
+                    type: integer
+                content:
+                    type: string
+                author_id:
+                    type: integer
+                post_id:
+                    type: integer
+
+        CommentCreate:
+            type: object
+            properties:
+                content:
+                    type: string
+                author_id:
+                    type: integer
+                post_id:
+                    type: integer
+
+        CommentUpdate:
+            type: object
+            properties:
+                content:
+                    type: string
+
+        Token:
+            type: object
+            properties:
+                token:
+                    type: string
+                expires_at:
+                    type: string
+                    format: date-time
+
+        User:
+            type: object
+            properties:
+                id:
+                    type: integer
+                email:
+                    type: string
+                password:
+                    type: string
+
+        Credentials:
+            type: object
+            properties:
+                user_id:
+                    type: integer
+                email:
+                    type: string
+                session:
+                    $ref: "#/components/schemas/Token"
+
+securitySchemes:
+    sessionAuth:
+        type: apiKey
+        in: cookie
+        name: session

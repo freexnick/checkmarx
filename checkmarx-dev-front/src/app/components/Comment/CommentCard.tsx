@@ -13,9 +13,7 @@ interface CommentCardProps {
 
 export default function CommentCard({ comment, setCommentState, commentState, user }: CommentCardProps) {
     const router = useRouter();
-    const logged_user = user?.id;
-    const author = logged_user || user?.id;
-    const owner = logged_user === comment.author_id;
+    const owner = user?.id === comment.author_id;
 
     function handleEdit(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         e.stopPropagation();
@@ -44,7 +42,7 @@ export default function CommentCard({ comment, setCommentState, commentState, us
     return (
         <li key={comment.id} className="bg-white p-4 rounded-lg shadow-md">
             <div className="flex justify-between">
-                <span className="font-semibold text-gray-700">{owner ? "You" : author}</span>
+                <span className="font-semibold text-gray-700">{owner ? "You" : comment.author_id}</span>
                 {owner && (
                     <div>
                         <button

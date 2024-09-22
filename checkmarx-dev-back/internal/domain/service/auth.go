@@ -82,7 +82,7 @@ func (as *AuthService) GenerateToken(u *entity.User) (*entity.Token, error) {
 	return token, nil
 }
 
-func (as *AuthService) Create(u *entity.User) (*entity.Token, error) {
+func (as *AuthService) Create(u *entity.User) (*entity.Credentials, error) {
 	if u.Email == "" || u.Password == "" {
 		return nil, errors.New("missing fields")
 	}
@@ -109,11 +109,12 @@ func (as *AuthService) Create(u *entity.User) (*entity.Token, error) {
 		return nil, err
 	}
 
-	if err := as.repo.Insert(u, token); err != nil {
+	createdUser, err := as.repo.Insert(u, token)
+	if err != nil {
 		return nil, err
 	}
 
-	return token, nil
+	return &entity.Credentials{UserID: createdUser.ID, Email: createdUser.Email, Token: *token}, nil
 }
 
 func (as *AuthService) GetByToken(t string) (*entity.User, error) {

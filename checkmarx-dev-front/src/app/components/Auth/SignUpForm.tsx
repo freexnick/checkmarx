@@ -5,11 +5,13 @@ import { useState } from "react";
 import { EyeIcon, EyeOff, Mail } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { signUpUser } from "app/auth/signUp";
+import { useUser } from "app/context/User";
 
 export default function SignUpForm() {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
     const router = useRouter();
+    const { userRef } = useUser();
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -18,8 +20,8 @@ export default function SignUpForm() {
         const data = Object.fromEntries(formData.entries());
 
         const result = await signUpUser(data);
-
-        if (result?.token) {
+        if (result?.email) {
+            userRef.current = { id: +result.user_id, email: result.email };
             router.push("/posts");
         }
 

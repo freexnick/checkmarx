@@ -33,7 +33,7 @@ export default function PostCard({ post, user }: PostCardProps) {
 
     return (
         <article className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <PostModal isOpen={isModalOpen} onClose={handleModal} variant="Update" onSubmission={updatePost} postId={post.id} />
+            <PostModal isOpen={isModalOpen} onClose={handleModal} variant="Update" onSubmission={updatePost} post={post} />
             <div className="flex justify-between items-start mb-4">
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 break-words whitespace-normal pr-4 mb-2 sm:mb-0 w-full sm:w-auto">
                     {post.title}

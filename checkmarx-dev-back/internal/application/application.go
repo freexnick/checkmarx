@@ -96,6 +96,7 @@ func (a *Application) setObserver(ctx context.Context, conf *config.Configuratio
 
 func (a *Application) setRepositories(ctx context.Context, conf *config.Configuration) error {
 	db, err := postgres.New(ctx, postgres.Configuration{
+		Observer:         a.observe,
 		ConnectionURL:    conf.PostgresURL,
 		MinConnections:   conf.PostgresMinConnections,
 		MaxConnections:   conf.PostgresMaxConnections,

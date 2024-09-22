@@ -30,7 +30,7 @@ func (ah *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := ah.Service.Create(&user)
+	createdUser, err := ah.Service.Create(&user)
 	if err != nil {
 		if err.Error() == "user already exist" {
 			helpers.WriteJSON(w, http.StatusBadRequest, err.Error(), nil)
@@ -42,13 +42,14 @@ func (ah *AuthHandler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	cookie := http.Cookie{
 		Name:     "session",
-		Value:    token.PlainText,
+		Value:    createdUser.Token.PlainText,
 		Path:     "/",
 		Expires:  time.Now().Add(72 * time.Hour),
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &cookie)
-	helpers.WriteJSON(w, http.StatusCreated, token, nil)
+
+	helpers.WriteJSON(w, http.StatusCreated, createdUser, nil)
 }
 
 func (ah *AuthHandler) SignIn(w http.ResponseWriter, r *http.Request) {

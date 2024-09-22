@@ -22,7 +22,6 @@ func New(ctx context.Context, conf Configuration) *Observer {
 
 func (o *Observer) Error(ctx context.Context, err error, logs ...KV) {
 	o.logger.Error(ctx, err, logs...)
-
 }
 
 func (o *Observer) Warn(ctx context.Context, msg string, logs ...KV) {

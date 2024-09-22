@@ -1,17 +1,20 @@
+import { useState } from "react";
 import { Button } from "@ui/Button";
 import { useUser } from "app/context/User";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { Post } from "@t/index";
 
 interface PostModalProps {
     isOpen: boolean;
     onClose: () => void;
     variant: "Create" | "Update";
     onSubmission: (data: Record<string, FormDataEntryValue | number>) => Promise<string | undefined>;
-    postId?: number;
+    post?: Post;
 }
 
-export default function PostModal({ isOpen, onClose, variant, onSubmission, postId }: PostModalProps) {
+export default function PostModal({ isOpen, onClose, variant, onSubmission, post }: PostModalProps) {
+    const [modalContent, setModalContent] = useState({ title: post?.title || "", content: post?.content || "" });
     const { userRef } = useUser();
     const router = useRouter();
 
@@ -21,7 +24,7 @@ export default function PostModal({ isOpen, onClose, variant, onSubmission, post
         const user_id = userRef?.current?.id as number;
         const data = Object.fromEntries(formData.entries()) as Record<string, FormDataEntryValue | number>;
         data.author_id = user_id;
-        if (postId) data.id = postId;
+        if (post?.id) data.id = post.id;
 
         try {
             const res = await onSubmission(data);
@@ -60,6 +63,8 @@ export default function PostModal({ isOpen, onClose, variant, onSubmission, post
                                 type="text"
                                 placeholder="Post Title"
                                 required
+                                value={modalContent.title}
+                                onChange={(e) => setModalContent((prev) => ({ ...prev, title: e.target.value }))}
                                 minLength={6}
                                 maxLength={120}
                             />
@@ -72,6 +77,8 @@ export default function PostModal({ isOpen, onClose, variant, onSubmission, post
                             <textarea
                                 id="post_message"
                                 name="content"
+                                value={modalContent.content}
+                                onChange={(e) => setModalContent((prev) => ({ ...prev, content: e.target.value }))}
                                 rows={4}
                                 maxLength={255}
                                 className="block p-2.5 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"

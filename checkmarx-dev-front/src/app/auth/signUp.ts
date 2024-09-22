@@ -20,9 +20,9 @@ export async function signUpUser(data: Record<string, FormDataEntryValue>) {
             return { status: res.status, message: user };
         }
 
-        if (user?.token) {
-            cookies().set("session", user.token, {
-                expires: new Date(user.expires_at),
+        if (user?.session?.token) {
+            cookies().set("session", user.session.token, {
+                expires: new Date(user.session.expires_at),
                 path: "/",
             });
         }

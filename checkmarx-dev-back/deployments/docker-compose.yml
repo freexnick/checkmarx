@@ -35,6 +35,13 @@ services:
     #     networks:
     #         - checkmarx
     #     restart: always
+    swagger-ui:
+        container_name: checkmarx_swagger_ui
+        build:
+            context: ../
+            dockerfile: ./deployments/swagger.dockerfile
+        ports:
+            - 8888:8080
 networks:
     checkmarx:
         driver: bridge

@@ -35,39 +35,39 @@ func (ar *AuthRepository) Get(email string) (*entity.User, error) {
 	return user, nil
 }
 
-func (ar *AuthRepository) Insert(u *entity.User, t *entity.Token) error {
+func (ar *AuthRepository) Insert(u *entity.User, t *entity.Token) (*entity.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	var user entity.User
 
 	args := []any{u.Email, u.Password, t.Scope, t.Hash, t.ExpiresAt}
 	query :=
 		`WITH inserted_user AS (
-		INSERT INTO users 
-			(email, password, created_at, updated_at)
-		VALUES 
-			($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)RETURNING id)
-		INSERT INTO tokens 
-			(user_id, scope, hash, created_at, updated_at, expires_at)
-		SELECT 
-			id, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $5
-		FROM 
-			inserted_user;
+			INSERT INTO users (email, password, created_at, updated_at)
+			VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+			RETURNING id, email, created_at, updated_at
+		)
+		INSERT INTO tokens (user_id, scope, hash, created_at, updated_at, expires_at)
+		SELECT id, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, $5
+		FROM inserted_user
+		RETURNING id, (SELECT email FROM inserted_user), created_at, updated_at;
 		`
 
-	_, err := ar.db.client.ExecContext(ctx, query, args...)
+	err := ar.db.client.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.Email, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		ar.db.observ.Error(ctx, err)
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
-			return ErrDuplicateEmail
+			return nil, ErrDuplicateEmail
 		case errors.Is(err, sql.ErrNoRows):
-			return ErrEditConflict
+			return nil, ErrEditConflict
 		default:
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return &user, nil
 }
 
 func (ar *AuthRepository) InsertToken(t *entity.Token) error {
@@ -98,6 +98,7 @@ func (ar *AuthRepository) GetByToken(t [32]byte) (*entity.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	var user entity.User
 	query := `
 		SELECT u.*
 		FROM users u
@@ -106,11 +107,7 @@ func (ar *AuthRepository) GetByToken(t [32]byte) (*entity.User, error) {
 		AND t.expires_at > CURRENT_TIMESTAMP
 	`
 
-	row := ar.db.client.QueryRowContext(ctx, query, t[:])
-
-	var user entity.User
-
-	err := row.Scan(
+	err := ar.db.client.QueryRowContext(ctx, query, t[:]).Scan(
 		&user.ID,
 		&user.Email,
 		&user.Password,
